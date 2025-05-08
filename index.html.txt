@@ -113,8 +113,32 @@
         let useGorillaImage = false;
         let useHumanImage = false;
 
-        gorillaImg.onload = () => { useGorillaImage = true; };
-        humanImg.onload = () => { useHumanImage = true; };
+        // Counter to track loaded images
+        let imagesLoaded = 0;
+        const totalImages = 2;
+
+        // Function to check if all images are loaded
+        function checkImagesLoaded() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                useGorillaImage = true;
+                useHumanImage = true;
+                gameLoop(); // Start the game only after images are loaded
+            }
+        }
+
+        gorillaImg.onload = checkImagesLoaded;
+        humanImg.onload = checkImagesLoaded;
+
+        gorillaImg.onerror = () => {
+            console.error("Failed to load Gorillavs100.png");
+            checkImagesLoaded(); // Proceed even if image fails to load
+        };
+        humanImg.onerror = () => {
+            console.error("Failed to load Men100.png");
+            checkImagesLoaded(); // Proceed even if image fails to load
+        };
+
         gorillaImg.src = "./Gorillavs100.png"; // Ensure this file is in the repository
         humanImg.src = "./Men100.png"; // Ensure this file is in the repository
 
@@ -124,10 +148,7 @@
                 this.body = [[WIDTH / 2, HEIGHT / 2]];
                 this.direction = [1, 0];
                 this.size = BLOCK_SIZE * 2;
-                this.image = null;
-                if (useGorillaImage) {
-                    this.image = gorillaImg;
-                }
+                this.image = gorillaImg;
             }
 
             move() {
@@ -158,10 +179,7 @@
         class Human {
             constructor() {
                 this.position = this.randomPosition();
-                this.image = null;
-                if (useHumanImage) {
-                    this.image = humanImg;
-                }
+                this.image = humanImg;
             }
 
             randomPosition() {
@@ -203,12 +221,21 @@
             }
         });
 
+        // Check collision with tolerance
+        function checkCollision() {
+            const [gorillaX, gorillaY] = gorilla.body[0];
+            const [humanX, humanY] = human.position;
+            const tolerance = BLOCK_SIZE; // Allow collision within this range
+
+            return Math.abs(gorillaX - humanX) < tolerance && Math.abs(gorillaY - humanY) < tolerance;
+        }
+
         // Main game loop
         function gameLoop() {
             // Update
             gorilla.move();
 
-            if (gorilla.body[0][0] === human.position[0] && gorilla.body[0][1] === human.position[1]) {
+            if (checkCollision()) {
                 score++;
                 gorilla.grow();
                 human = new Human();
@@ -241,8 +268,7 @@
             setTimeout(gameLoop, 1000 / speed);
         }
 
-        // Start the game
-        gameLoop();
+        // Game loop will start after images are loaded (via checkImagesLoaded)
     </script>
 </body>
 </html>
