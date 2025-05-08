@@ -55,13 +55,17 @@
             background-color: black;
             box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
         }
-        #score {
+                    #score {
             position: absolute;
             color: yellow;
             font-size: 24px;
             top: 10px;
             left: 10px;
             text-shadow: 1px 1px #000;
+        }
+        #startButton {
+            margin: 30px auto;
+            display: block;
         }
         #message {
             position: absolute;
@@ -95,7 +99,7 @@
     <h1>🦍 100 MEN VS 1 GORILLA 🥊</h1>
     <p>Join the wildest meme movement online! Fight, cheer, and laugh in the ultimate showdown. This is for Harambe — no whitepaper, just vibes. 🥊🦍💥</p>
     
-    <button class="button" id="startButton">🎮 Start Game</button>
+    <button class="button" onclick="window.open('https://t.me/+VDTo0tVQMvU0MWQ8', '_blank')">🦍 Join the Movement</button>
     <button class="button" onclick="toggleInstructions()">ℹ️ How To Play</button>
     <button class="button" onclick="alert('Bro, just a meme coin, no whitepaper. Enjoy the ride! 🦍✨')">📜 Whitepaper</button>
 
@@ -120,6 +124,8 @@
     <div class="emoji-bar">
         👥👥👥👥👥👥👥👥👥👥👥👥👥👥👥👥
     </div>
+    
+    <button class="button" id="startButton">🎮 Start Game</button>
 
     <script>
         // Toggle instructions panel
@@ -168,19 +174,15 @@
             const scoreDisplay = document.getElementById("score");
             const messageDisplay = document.getElementById("message");
 
-            // Create SVG gorilla as a data URL
-            const gorillaIcon = `
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="45" fill="#333" />
-                <circle cx="50" cy="45" r="30" fill="#555" />
-                <circle cx="35" cy="40" r="5" fill="white" />
-                <circle cx="65" cy="40" r="5" fill="white" />
-                <circle cx="35" cy="40" r="2" fill="black" />
-                <circle cx="65" cy="40" r="2" fill="black" />
-                <path d="M 30 60 Q 50 80 70 60" fill="none" stroke="#333" stroke-width="5" />
-            </svg>`;
+            // Use the angry gorilla head image
+            const gorillaImg = new Image();
+            gorillaImg.src = "https://raw.githubusercontent.com/100menvs1gorilla/100menVS1Gorilla/main/gorilla_head.png";
+            gorillaImg.onerror = () => {
+                console.error("Failed to load gorilla image, using fallback");
+                useGorillaImage = false;
+            };
             
-            // Create SVG human as a data URL
+            // Create SVG human icon
             const humanIcon = `
             <svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="25" cy="15" r="10" fill="#FFD700" />
@@ -195,14 +197,39 @@
                 return `data:image/svg+xml;charset=utf-8,${encodedSVG}`;
             };
 
-            // Load images
-            const gorillaImg = new Image();
+            // Load human image
             const humanImg = new Image();
-            gorillaImg.src = svgToDataURL(gorillaIcon);
             humanImg.src = svgToDataURL(humanIcon);
             
             let useGorillaImage = true;
             let useHumanImage = true;
+
+            // Wait for images to load
+            Promise.all([
+                new Promise(resolve => {
+                    gorillaImg.onload = resolve;
+                    gorillaImg.onerror = () => {
+                        useGorillaImage = false;
+                        resolve();
+                    };
+                }),
+                new Promise(resolve => {
+                    humanImg.onload = resolve;
+                    humanImg.onerror = () => {
+                        useHumanImage = false;
+                        resolve();
+                    };
+                })
+            ]).then(() => {
+                // Start game loop after images load
+                gameLoop();
+            }).catch(error => {
+                console.error("Error loading images:", error);
+                // Fallback to basic shapes if images fail to load
+                useGorillaImage = false;
+                useHumanImage = false;
+                gameLoop();
+            });
 
             // Gorilla class
             class Gorilla {
@@ -227,14 +254,15 @@
                     if (wrappedY >= HEIGHT) wrappedY = 0;
                     
                     this.body.unshift([wrappedX, wrappedY]);
-                    this.body.pop(); // Remove the tail to keep the same length
+                    
+                    // Keep only the head for the gorilla (not a snake)
+                    while (this.body.length > 1) {
+                        this.body.pop();
+                    }
                 }
 
                 grow() {
                     this.size += 2;
-                    // Add a new segment at the current position
-                    const tail = this.body[this.body.length - 1];
-                    this.body.push([tail[0], tail[1]]);
                 }
 
                 draw() {
@@ -259,8 +287,8 @@
 
                 randomPosition() {
                     return [
-                        Math.floor(Math.random() * (WIDTH / BLOCK_SIZE)) * BLOCK_SIZE,
-                        Math.floor(Math.random() * (HEIGHT / BLOCK_SIZE)) * BLOCK_SIZE
+                        Math.floor(Math.random() * ((WIDTH - BLOCK_SIZE*2) / BLOCK_SIZE)) * BLOCK_SIZE,
+                        Math.floor(Math.random() * ((HEIGHT - BLOCK_SIZE*2) / BLOCK_SIZE)) * BLOCK_SIZE
                     ];
                 }
 
@@ -269,7 +297,7 @@
                         ctx.drawImage(humanImg, this.position[0], this.position[1], BLOCK_SIZE * 2, BLOCK_SIZE * 2);
                     } else {
                         ctx.fillStyle = ORANGE;
-                        ctx.fillRect(this.position[0], this.position[1], BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.fillRect(this.position[0], this.position[1], BLOCK_SIZE * 2, BLOCK_SIZE * 2);
                     }
                 }
             }
@@ -283,19 +311,43 @@
             let messageText = "";
             const TARGET_SCORE = 100;
             let gameRunning = true;
+            let gameLoopId = null;
 
             // Handle keyboard input
             document.addEventListener("keydown", (event) => {
-                if (!gameRunning) return;
+                if (!gameRunning) {
+                    if (event.code === "Space") {
+                        resetGame();
+                    }
+                    return;
+                }
                 
-                if (event.key === "ArrowUp" && gorilla.direction[1] !== 1) {
-                    gorilla.direction = [0, -1];
-                } else if (event.key === "ArrowDown" && gorilla.direction[1] !== -1) {
-                    gorilla.direction = [0, 1];
-                } else if (event.key === "ArrowLeft" && gorilla.direction[0] !== 1) {
-                    gorilla.direction = [-1, 0];
-                } else if (event.key === "ArrowRight" && gorilla.direction[0] !== -1) {
-                    gorilla.direction = [1, 0];
+                switch (event.key) {
+                    case "ArrowUp":
+                        if (gorilla.direction[1] !== 1) {
+                            gorilla.direction = [0, -1];
+                        }
+                        break;
+                    case "ArrowDown":
+                        if (gorilla.direction[1] !== -1) {
+                            gorilla.direction = [0, 1];
+                        }
+                        break;
+                    case "ArrowLeft":
+                        if (gorilla.direction[0] !== 1) {
+                            gorilla.direction = [-1, 0];
+                        }
+                        break;
+                    case "ArrowRight":
+                        if (gorilla.direction[0] !== -1) {
+                            gorilla.direction = [1, 0];
+                        }
+                        break;
+                }
+                
+                // Prevent scrolling with arrow keys
+                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.key)) {
+                    event.preventDefault();
                 }
             });
 
@@ -305,9 +357,13 @@
                 const [humanX, humanY] = human.position;
                 
                 // Check if the gorilla's head collides with the human
-                // We need to account for the different sizes
-                return Math.abs(headX - humanX) < BLOCK_SIZE && 
-                       Math.abs(headY - humanY) < BLOCK_SIZE;
+                // Using a more forgiving collision detection
+                const distance = Math.sqrt(
+                    Math.pow(headX - (humanX + BLOCK_SIZE), 2) + 
+                    Math.pow(headY - (humanY + BLOCK_SIZE), 2)
+                );
+                
+                return distance < BLOCK_SIZE + (gorilla.size / 4);
             }
 
             // Draw victory screen
@@ -341,14 +397,12 @@
                 gameRunning = true;
                 scoreDisplay.textContent = `Score: ${score}/100`;
                 messageDisplay.textContent = "";
-            }
-
-            // Add replay functionality
-            document.addEventListener("keydown", (event) => {
-                if (!gameRunning && event.code === "Space") {
-                    resetGame();
+                
+                if (gameLoopId) {
+                    clearTimeout(gameLoopId);
                 }
-            });
+                gameLoop();
+            }
 
             // Main game loop
             function gameLoop() {
@@ -392,11 +446,8 @@
                     return;
                 }
 
-                setTimeout(gameLoop, 1000 / speed);
+                gameLoopId = setTimeout(gameLoop, 1000 / speed);
             }
-
-            // Start the game
-            gameLoop();
         }
     </script>
 </body>
