@@ -191,7 +191,8 @@
                         gorilla.x = (gorilla.x + gorilla.dx + WIDTH) % WIDTH;
                         gorilla.y = (gorilla.y + gorilla.dy + HEIGHT) % HEIGHT;
 
-                        if (Math.abs(gorilla.x - human.x) < BLOCK_SIZE && Math.abs(gorilla.y - human.y) < BLOCK_SIZE) {
+                        // Adjust collision detection for larger human size
+                        if (Math.abs(gorilla.x - human.x) < gorilla.size && Math.abs(gorilla.y - human.y) < gorilla.size) {
                             score++;
                             gorilla.size += 2;
                             human.x = Math.floor(Math.random() * (WIDTH / BLOCK_SIZE)) * BLOCK_SIZE;
@@ -207,8 +208,8 @@
                         // Draw gorilla image
                         ctx.drawImage(gorillaImg, gorilla.x, gorilla.y, gorilla.size, gorilla.size);
 
-                        // Draw human image (scaled to BLOCK_SIZE)
-                        ctx.drawImage(humanImg, human.x, human.y, BLOCK_SIZE, BLOCK_SIZE);
+                        // Draw human image (same size as gorilla)
+                        ctx.drawImage(humanImg, human.x, human.y, gorilla.size, gorilla.size);
 
                         scoreDisplay.textContent = `Score: ${score}/100`;
 
