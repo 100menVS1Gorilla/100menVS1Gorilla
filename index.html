@@ -23,7 +23,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(26, 26, 26, 0.6); /* Adjust opacity here (0.6 = 60% opacity) */
+            background-color: rgba(26, 26, 26, 0.6);
             z-index: -1;
         }
         h1 {
@@ -110,7 +110,9 @@
 <body>
     <h1>🦍 100 MEN VS 1 GORILLA 🥊</h1>
     <p>Join the wildest meme movement online! Fight, cheer, and laugh in the ultimate showdown. This is for Harambe — no whitepaper, just vibes. 🥊🦍💥</p>
-    
+
+    <button class="button" onclick="window.open('https://dexscreener.com/solana/G3xKfjhfR84zjByT5Vzr2eZe6ivrRmo7dtQTLBhjRBbi', '_blank')">💰 BUY! RIGHT! NOW! 💰</button>
+
     <button class="button" onclick="window.open('https://t.me/+VDTo0tVQMvU0MWQ8', '_blank')">🦍 Join the Movement</button>
     <button class="button" onclick="toggleInstructions()">ℹ️ How To Play</button>
     <button class="button" onclick="alert('Bro, just a meme coin, no whitepaper. Enjoy the ride! 🦍✨')">📜 Whitepaper</button>
@@ -171,7 +173,6 @@
             const scoreDisplay = document.getElementById("score");
             const messageDisplay = document.getElementById("message");
 
-            // Load images
             const gorillaImg = new Image();
             gorillaImg.src = "Gorillavs100.png";
             const humanImg = new Image();
@@ -183,7 +184,6 @@
             let speed = FPS;
             let gameRunning = true;
 
-            // Wait for images to load
             Promise.all([new Promise(resolve => gorillaImg.onload = resolve), new Promise(resolve => humanImg.onload = resolve)])
                 .then(() => {
                     document.addEventListener("keydown", (event) => {
@@ -203,7 +203,6 @@
                         gorilla.x = (gorilla.x + gorilla.dx + WIDTH) % WIDTH;
                         gorilla.y = (gorilla.y + gorilla.dy + HEIGHT) % HEIGHT;
 
-                        // Adjust collision detection for larger human size
                         if (Math.abs(gorilla.x - human.x) < gorilla.size && Math.abs(gorilla.y - human.y) < gorilla.size) {
                             score++;
                             gorilla.size += 2;
@@ -217,10 +216,7 @@
                         ctx.fillStyle = "black";
                         ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-                        // Draw gorilla image
                         ctx.drawImage(gorillaImg, gorilla.x, gorilla.y, gorilla.size, gorilla.size);
-
-                        // Draw human image (same size as gorilla)
                         ctx.drawImage(humanImg, human.x, human.y, gorilla.size, gorilla.size);
 
                         scoreDisplay.textContent = `Score: ${score}/100`;
