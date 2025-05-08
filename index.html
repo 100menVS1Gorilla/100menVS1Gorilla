@@ -159,62 +159,72 @@
             const scoreDisplay = document.getElementById("score");
             const messageDisplay = document.getElementById("message");
 
+            // Load images
+            const gorillaImg = new Image();
+            gorillaImg.src = "Gorillavs100.png";
+            const humanImg = new Image();
+            humanImg.src = "Men100.png";
+
             let gorilla = { x: WIDTH / 2, y: HEIGHT / 2, size: BLOCK_SIZE * 2, dx: BLOCK_SIZE, dy: 0 };
             let human = { x: Math.floor(Math.random() * (WIDTH / BLOCK_SIZE)) * BLOCK_SIZE, y: Math.floor(Math.random() * (HEIGHT / BLOCK_SIZE)) * BLOCK_SIZE };
             let score = 0;
             let speed = FPS;
             let gameRunning = true;
 
-            document.addEventListener("keydown", (event) => {
-                switch (event.key) {
-                    case "ArrowUp":
-                        gorilla.dx = 0; gorilla.dy = -BLOCK_SIZE; break;
-                    case "ArrowDown":
-                        gorilla.dx = 0; gorilla.dy = BLOCK_SIZE; break;
-                    case "ArrowLeft":
-                        gorilla.dx = -BLOCK_SIZE; gorilla.dy = 0; break;
-                    case "ArrowRight":
-                        gorilla.dx = BLOCK_SIZE; gorilla.dy = 0; break;
-                }
-            });
+            // Wait for images to load
+            Promise.all([new Promise(resolve => gorillaImg.onload = resolve), new Promise(resolve => humanImg.onload = resolve)])
+                .then(() => {
+                    document.addEventListener("keydown", (event) => {
+                        switch (event.key) {
+                            case "ArrowUp":
+                                gorilla.dx = 0; gorilla.dy = -BLOCK_SIZE; break;
+                            case "ArrowDown":
+                                gorilla.dx = 0; gorilla.dy = BLOCK_SIZE; break;
+                            case "ArrowLeft":
+                                gorilla.dx = -BLOCK_SIZE; gorilla.dy = 0; break;
+                            case "ArrowRight":
+                                gorilla.dx = BLOCK_SIZE; gorilla.dy = 0; break;
+                        }
+                    });
 
-            function update() {
-                gorilla.x = (gorilla.x + gorilla.dx + WIDTH) % WIDTH;
-                gorilla.y = (gorilla.y + gorilla.dy + HEIGHT) % HEIGHT;
+                    function update() {
+                        gorilla.x = (gorilla.x + gorilla.dx + WIDTH) % WIDTH;
+                        gorilla.y = (gorilla.y + gorilla.dy + HEIGHT) % HEIGHT;
 
-                if (Math.abs(gorilla.x - human.x) < BLOCK_SIZE && Math.abs(gorilla.y - human.y) < BLOCK_SIZE) {
-                    score++;
-                    gorilla.size += 2;
-                    human.x = Math.floor(Math.random() * (WIDTH / BLOCK_SIZE)) * BLOCK_SIZE;
-                    human.y = Math.floor(Math.random() * (HEIGHT / BLOCK_SIZE)) * BLOCK_SIZE;
-                    messageDisplay.textContent = `${score} down!`;
-                    setTimeout(() => messageDisplay.textContent = "", 1000);
-                    if (score % 10 === 0) speed++;
-                }
+                        if (Math.abs(gorilla.x - human.x) < BLOCK_SIZE && Math.abs(gorilla.y - human.y) < BLOCK_SIZE) {
+                            score++;
+                            gorilla.size += 2;
+                            human.x = Math.floor(Math.random() * (WIDTH / BLOCK_SIZE)) * BLOCK_SIZE;
+                            human.y = Math.floor(Math.random() * (HEIGHT / BLOCK_SIZE)) * BLOCK_SIZE;
+                            messageDisplay.textContent = `${score} down!`;
+                            setTimeout(() => messageDisplay.textContent = "", 1000);
+                            if (score % 10 === 0) speed++;
+                        }
 
-                ctx.fillStyle = "black";
-                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+                        ctx.fillStyle = "black";
+                        ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-                ctx.fillStyle = "green";
-                ctx.fillRect(gorilla.x, gorilla.y, gorilla.size, gorilla.size);
+                        // Draw gorilla image
+                        ctx.drawImage(gorillaImg, gorilla.x, gorilla.y, gorilla.size, gorilla.size);
 
-                ctx.fillStyle = "orange";
-                ctx.fillRect(human.x, human.y, BLOCK_SIZE, BLOCK_SIZE);
+                        // Draw human image (scaled to BLOCK_SIZE)
+                        ctx.drawImage(humanImg, human.x, human.y, BLOCK_SIZE, BLOCK_SIZE);
 
-                scoreDisplay.textContent = `Score: ${score}/100`;
+                        scoreDisplay.textContent = `Score: ${score}/100`;
 
-                if (score >= 100) {
-                    gameRunning = false;
-                    ctx.fillStyle = "yellow";
-                    ctx.font = "20px Arial";
-                    ctx.fillText("YOU WIN!", WIDTH / 2 - 50, HEIGHT / 2);
-                    return;
-                }
+                        if (score >= 100) {
+                            gameRunning = false;
+                            ctx.fillStyle = "yellow";
+                            ctx.font = "20px Arial";
+                            ctx.fillText("YOU WIN!", WIDTH / 2 - 50, HEIGHT / 2);
+                            return;
+                        }
 
-                if (gameRunning) setTimeout(update, 1000 / speed);
-            }
+                        if (gameRunning) setTimeout(update, 1000 / speed);
+                    }
 
-            update();
+                    update();
+                });
         }
     </script>
 </body>
