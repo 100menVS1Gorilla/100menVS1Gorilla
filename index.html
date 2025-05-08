@@ -55,7 +55,7 @@
             background-color: black;
             box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
         }
-                    #score {
+        #score {
             position: absolute;
             color: yellow;
             font-size: 24px;
@@ -128,326 +128,93 @@
     <button class="button" id="startButton">🎮 Start Game</button>
 
     <script>
-        // Toggle instructions panel
         function toggleInstructions() {
             const instructions = document.getElementById("instructionsPanel");
             instructions.classList.toggle("hidden");
         }
 
-        // Wait for the DOM to be fully loaded
         document.addEventListener("DOMContentLoaded", function() {
             const startButton = document.getElementById("startButton");
             const canvas = document.getElementById("gameCanvas");
             const scoreDisplay = document.getElementById("score");
             
             startButton.addEventListener("click", function() {
-                // Show game elements
                 canvas.classList.remove("hidden");
                 scoreDisplay.classList.remove("hidden");
                 startButton.disabled = true;
                 startButton.textContent = "🎮 Game Started";
                 startButton.style.backgroundColor = "#666";
-                
-                // Start the game
                 initGame();
             });
         });
 
         function initGame() {
-            // Game settings
             const WIDTH = 600;
             const HEIGHT = 400;
             const BLOCK_SIZE = 20;
-            let FPS = 5; // Slower at start
+            let FPS = 5;
 
-            // Colors
-            const BLACK = "#000000";
-            const WHITE = "#FFFFFF";
-            const RED = "#FF0000";
-            const YELLOW = "#FFFF00";
-            const GREEN = "#00FF00";
-            const ORANGE = "#FF9900";
-
-            // Canvas setup
             const canvas = document.getElementById("gameCanvas");
             const ctx = canvas.getContext("2d");
             const scoreDisplay = document.getElementById("score");
             const messageDisplay = document.getElementById("message");
 
-            // Use the angry gorilla head image
-            const gorillaImg = new Image();
-            gorillaImg.src = "https://raw.githubusercontent.com/100menvs1gorilla/100menVS1Gorilla/main/gorilla_head.png";
-            gorillaImg.onerror = () => {
-                console.error("Failed to load gorilla image, using fallback");
-                useGorillaImage = false;
-            };
-            
-            // Create SVG human icon
-            const humanIcon = `
-            <svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="25" cy="15" r="10" fill="#FFD700" />
-                <rect x="15" y="25" width="20" height="20" fill="#FFD700" />
-                <rect x="15" y="45" width="8" height="5" fill="#FFD700" />
-                <rect x="27" y="45" width="8" height="5" fill="#FFD700" />
-            </svg>`;
-
-            // Convert SVG to data URL
-            const svgToDataURL = (svg) => {
-                const encodedSVG = encodeURIComponent(svg);
-                return `data:image/svg+xml;charset=utf-8,${encodedSVG}`;
-            };
-
-            // Load human image
-            const humanImg = new Image();
-            humanImg.src = svgToDataURL(humanIcon);
-            
-            let useGorillaImage = true;
-            let useHumanImage = true;
-
-            // Wait for images to load
-            Promise.all([
-                new Promise(resolve => {
-                    gorillaImg.onload = resolve;
-                    gorillaImg.onerror = () => {
-                        useGorillaImage = false;
-                        resolve();
-                    };
-                }),
-                new Promise(resolve => {
-                    humanImg.onload = resolve;
-                    humanImg.onerror = () => {
-                        useHumanImage = false;
-                        resolve();
-                    };
-                })
-            ]).then(() => {
-                // Start game loop after images load
-                gameLoop();
-            }).catch(error => {
-                console.error("Error loading images:", error);
-                // Fallback to basic shapes if images fail to load
-                useGorillaImage = false;
-                useHumanImage = false;
-                gameLoop();
-            });
-
-            // Gorilla class
-            class Gorilla {
-                constructor() {
-                    this.body = [[WIDTH / 2, HEIGHT / 2]];
-                    this.direction = [1, 0];
-                    this.size = BLOCK_SIZE * 2;
-                }
-
-                move() {
-                    const head = this.body[0];
-                    const newX = (head[0] + this.direction[0] * BLOCK_SIZE);
-                    const newY = (head[1] + this.direction[1] * BLOCK_SIZE);
-                    
-                    // Handle wrapping around the screen
-                    let wrappedX = newX;
-                    let wrappedY = newY;
-                    
-                    if (wrappedX < 0) wrappedX = WIDTH - BLOCK_SIZE;
-                    if (wrappedX >= WIDTH) wrappedX = 0;
-                    if (wrappedY < 0) wrappedY = HEIGHT - BLOCK_SIZE;
-                    if (wrappedY >= HEIGHT) wrappedY = 0;
-                    
-                    this.body.unshift([wrappedX, wrappedY]);
-                    
-                    // Keep only the head for the gorilla (not a snake)
-                    while (this.body.length > 1) {
-                        this.body.pop();
-                    }
-                }
-
-                grow() {
-                    this.size += 2;
-                }
-
-                draw() {
-                    const [headX, headY] = this.body[0];
-                    const centerX = headX - this.size / 4;
-                    const centerY = headY - this.size / 4;
-                    
-                    if (useGorillaImage) {
-                        ctx.drawImage(gorillaImg, centerX, centerY, this.size, this.size);
-                    } else {
-                        ctx.fillStyle = GREEN;
-                        ctx.fillRect(centerX, centerY, this.size, this.size);
-                    }
-                }
-            }
-
-            // Human class
-            class Human {
-                constructor() {
-                    this.position = this.randomPosition();
-                }
-
-                randomPosition() {
-                    return [
-                        Math.floor(Math.random() * ((WIDTH - BLOCK_SIZE*2) / BLOCK_SIZE)) * BLOCK_SIZE,
-                        Math.floor(Math.random() * ((HEIGHT - BLOCK_SIZE*2) / BLOCK_SIZE)) * BLOCK_SIZE
-                    ];
-                }
-
-                draw() {
-                    if (useHumanImage) {
-                        ctx.drawImage(humanImg, this.position[0], this.position[1], BLOCK_SIZE * 2, BLOCK_SIZE * 2);
-                    } else {
-                        ctx.fillStyle = ORANGE;
-                        ctx.fillRect(this.position[0], this.position[1], BLOCK_SIZE * 2, BLOCK_SIZE * 2);
-                    }
-                }
-            }
-
-            // Game logic
-            const gorilla = new Gorilla();
-            let human = new Human();
+            let gorilla = { x: WIDTH / 2, y: HEIGHT / 2, size: BLOCK_SIZE * 2, dx: BLOCK_SIZE, dy: 0 };
+            let human = { x: Math.floor(Math.random() * (WIDTH / BLOCK_SIZE)) * BLOCK_SIZE, y: Math.floor(Math.random() * (HEIGHT / BLOCK_SIZE)) * BLOCK_SIZE };
             let score = 0;
             let speed = FPS;
-            let messageTimer = 0;
-            let messageText = "";
-            const TARGET_SCORE = 100;
             let gameRunning = true;
-            let gameLoopId = null;
 
-            // Handle keyboard input
             document.addEventListener("keydown", (event) => {
-                if (!gameRunning) {
-                    if (event.code === "Space") {
-                        resetGame();
-                    }
-                    return;
-                }
-                
                 switch (event.key) {
                     case "ArrowUp":
-                        if (gorilla.direction[1] !== 1) {
-                            gorilla.direction = [0, -1];
-                        }
-                        break;
+                        gorilla.dx = 0; gorilla.dy = -BLOCK_SIZE; break;
                     case "ArrowDown":
-                        if (gorilla.direction[1] !== -1) {
-                            gorilla.direction = [0, 1];
-                        }
-                        break;
+                        gorilla.dx = 0; gorilla.dy = BLOCK_SIZE; break;
                     case "ArrowLeft":
-                        if (gorilla.direction[0] !== 1) {
-                            gorilla.direction = [-1, 0];
-                        }
-                        break;
+                        gorilla.dx = -BLOCK_SIZE; gorilla.dy = 0; break;
                     case "ArrowRight":
-                        if (gorilla.direction[0] !== -1) {
-                            gorilla.direction = [1, 0];
-                        }
-                        break;
-                }
-                
-                // Prevent scrolling with arrow keys
-                if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"].includes(event.key)) {
-                    event.preventDefault();
+                        gorilla.dx = BLOCK_SIZE; gorilla.dy = 0; break;
                 }
             });
 
-            // Check collision
-            function checkCollision() {
-                const [headX, headY] = gorilla.body[0];
-                const [humanX, humanY] = human.position;
-                
-                // Check if the gorilla's head collides with the human
-                // Using a more forgiving collision detection
-                const distance = Math.sqrt(
-                    Math.pow(headX - (humanX + BLOCK_SIZE), 2) + 
-                    Math.pow(headY - (humanY + BLOCK_SIZE), 2)
-                );
-                
-                return distance < BLOCK_SIZE + (gorilla.size / 4);
-            }
+            function update() {
+                gorilla.x = (gorilla.x + gorilla.dx + WIDTH) % WIDTH;
+                gorilla.y = (gorilla.y + gorilla.dy + HEIGHT) % HEIGHT;
 
-            // Draw victory screen
-            function drawVictoryScreen() {
-                ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-                ctx.fillRect(0, 0, WIDTH, HEIGHT);
-                
-                ctx.fillStyle = "#FFD700";
-                ctx.font = "30px 'Press Start 2P', cursive";
-                ctx.textAlign = "center";
-                ctx.fillText("VICTORY!", WIDTH / 2, HEIGHT / 2 - 40);
-                
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "16px 'Press Start 2P', cursive";
-                ctx.fillText("100 Men Defeated!", WIDTH / 2, HEIGHT / 2);
-                ctx.fillText("For Harambe!", WIDTH / 2, HEIGHT / 2 + 30);
-                
-                ctx.fillStyle = "#FF9900";
-                ctx.font = "12px 'Press Start 2P', cursive";
-                ctx.fillText("Press SPACE to play again", WIDTH / 2, HEIGHT / 2 + 70);
-            }
-
-            // Reset game
-            function resetGame() {
-                score = 0;
-                speed = FPS;
-                gorilla.body = [[WIDTH / 2, HEIGHT / 2]];
-                gorilla.direction = [1, 0];
-                gorilla.size = BLOCK_SIZE * 2;
-                human = new Human();
-                gameRunning = true;
-                scoreDisplay.textContent = `Score: ${score}/100`;
-                messageDisplay.textContent = "";
-                
-                if (gameLoopId) {
-                    clearTimeout(gameLoopId);
-                }
-                gameLoop();
-            }
-
-            // Main game loop
-            function gameLoop() {
-                if (!gameRunning) {
-                    drawVictoryScreen();
-                    return;
-                }
-                
-                // Update
-                gorilla.move();
-
-                if (checkCollision()) {
+                if (Math.abs(gorilla.x - human.x) < BLOCK_SIZE && Math.abs(gorilla.y - human.y) < BLOCK_SIZE) {
                     score++;
-                    gorilla.grow();
-                    human = new Human();
-                    messageText = `${score} ${score === 1 ? "man" : "men"} down!`;
-                    messageTimer = Date.now();
-                    
-                    if (score % 10 === 0) {
-                        speed += 1;
-                    }
+                    gorilla.size += 2;
+                    human.x = Math.floor(Math.random() * (WIDTH / BLOCK_SIZE)) * BLOCK_SIZE;
+                    human.y = Math.floor(Math.random() * (HEIGHT / BLOCK_SIZE)) * BLOCK_SIZE;
+                    messageDisplay.textContent = `${score} down!`;
+                    setTimeout(() => messageDisplay.textContent = "", 1000);
+                    if (score % 10 === 0) speed++;
                 }
 
-                // Draw
-                ctx.fillStyle = BLACK;
+                ctx.fillStyle = "black";
                 ctx.fillRect(0, 0, WIDTH, HEIGHT);
-                gorilla.draw();
-                human.draw();
+
+                ctx.fillStyle = "green";
+                ctx.fillRect(gorilla.x, gorilla.y, gorilla.size, gorilla.size);
+
+                ctx.fillStyle = "orange";
+                ctx.fillRect(human.x, human.y, BLOCK_SIZE, BLOCK_SIZE);
 
                 scoreDisplay.textContent = `Score: ${score}/100`;
 
-                if (messageText && Date.now() - messageTimer < 1000) {
-                    messageDisplay.textContent = messageText;
-                } else {
-                    messageDisplay.textContent = "";
-                }
-
-                if (score >= TARGET_SCORE) {
+                if (score >= 100) {
                     gameRunning = false;
-                    drawVictoryScreen();
+                    ctx.fillStyle = "yellow";
+                    ctx.font = "20px Arial";
+                    ctx.fillText("YOU WIN!", WIDTH / 2 - 50, HEIGHT / 2);
                     return;
                 }
 
-                gameLoopId = setTimeout(gameLoop, 1000 / speed);
+                if (gameRunning) setTimeout(update, 1000 / speed);
             }
+
+            update();
         }
     </script>
 </body>
