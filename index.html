@@ -1,45 +1,140 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>💥 100 Men vs 1 Gorilla - For Harambe 💥</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>100 Men VS 1 Gorilla</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         body {
-            background-image: url('harambe_background.jpg');
+            margin: 0;
+            padding: 0;
+            background: url('gorilla-background.jpg') no-repeat center center fixed;
             background-size: cover;
-            background-position: center;
             font-family: 'Press Start 2P', cursive;
             color: #fff;
             text-align: center;
-            padding: 50px;
         }
         h1 {
-            font-size: 50px;
-            margin-bottom: 20px;
-            text-shadow: 3px 3px #000;
+            font-size: 3em;
+            margin-top: 30px;
+            text-shadow: 2px 2px #000;
         }
-        .btn {
-            display: inline-block;
-            margin: 10px;
-            padding: 15px 30px;
-            background: #ff6600;
-            color: #fff;
-            font-size: 20px;
-            text-decoration: none;
+        p {
+            font-size: 1.2em;
+            margin: 20px auto;
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
             border-radius: 10px;
-            box-shadow: 2px 2px #000;
         }
-        .btn:hover {
-            background: #ff3300;
+        .button {
+            background-color: #ff9900;
+            color: white;
+            padding: 15px 30px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #ff6600;
+        }
+        .emoji-bar {
+            font-size: 2em;
+            margin-top: 40px;
+        }
+        canvas {
+            margin-top: 40px;
+            border: 4px solid #fff;
+            background-color: black;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>💥 100 Men vs 1 Gorilla 💥</h1>
-    <p>Join the movement. No white paper, no promises — just memes and power!</p>
-    <a href="https://t.me/+VDTo0tVQMvU0MWQ8" class="btn" target="_blank">Join the Telegram</a>
-    <a href="#" class="btn" onclick="alert('Bro, just a meme coin. No white paper. Enjoy the movement!')">Read Whitepaper</a>
+    <h1>🦍 100 MEN VS 1 GORILLA 🥊</h1>
+    <p>Join the wildest meme movement online! Fight, cheer, and laugh in the ultimate showdown. This is for Harambe — no whitepaper, just vibes. 🥊🦍💥</p>
+    <button class="button" onclick="window.open('https://t.me/+VDTo0tVQMvU0MWQ8', '_blank')">🚀 Join the Movement</button>
+    <button class="button" onclick="alert('Bro, just a meme coin, no whitepaper. Enjoy the ride! 🦍✨')">📜 Whitepaper</button>
+
+    <div class="emoji-bar">
+        🦍🥊💥👊🔥💣⚡💥🙌🦍🥊💥👊🔥💣⚡💥🙌<br>
+        👥👥👥👥👥👥👥👥👥👥👥👥👥👥👥👥<br>
+        🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍<br>
+    </div>
+
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let gorilla = { x: 50, y: 50, size: 20 };
+        let human = { x: 300, y: 200, size: 20 };
+        let dx = 20, dy = 0;
+        let score = 0;
+
+        function drawGorilla() {
+            ctx.fillStyle = 'green';
+            ctx.fillRect(gorilla.x, gorilla.y, gorilla.size, gorilla.size);
+        }
+
+        function drawHuman() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(human.x, human.y, human.size, human.size);
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function moveGorilla() {
+            gorilla.x += dx;
+            gorilla.y += dy;
+
+            if (gorilla.x < 0) gorilla.x = canvas.width - gorilla.size;
+            if (gorilla.x >= canvas.width) gorilla.x = 0;
+            if (gorilla.y < 0) gorilla.y = canvas.height - gorilla.size;
+            if (gorilla.y >= canvas.height) gorilla.y = 0;
+        }
+
+        function checkCollision() {
+            if (gorilla.x === human.x && gorilla.y === human.y) {
+                score++;
+                human.x = Math.floor(Math.random() * (canvas.width / 20)) * 20;
+                human.y = Math.floor(Math.random() * (canvas.height / 20)) * 20;
+            }
+        }
+
+        function drawScore() {
+            ctx.fillStyle = 'yellow';
+            ctx.font = '16px Arial';
+            ctx.fillText('Score: ' + score, 10, 20);
+        }
+
+        function gameLoop() {
+            clearCanvas();
+            drawGorilla();
+            drawHuman();
+            drawScore();
+            moveGorilla();
+            checkCollision();
+        }
+
+        setInterval(gameLoop, 200);
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowUp' && dy === 0) {
+                dx = 0; dy = -20;
+            } else if (e.key === 'ArrowDown' && dy === 0) {
+                dx = 0; dy = 20;
+            } else if (e.key === 'ArrowLeft' && dx === 0) {
+                dx = -20; dy = 0;
+            } else if (e.key === 'ArrowRight' && dx === 0) {
+                dx = 20; dy = 0;
+            }
+        });
+    </script>
 </body>
 </html>
