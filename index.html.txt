@@ -8,15 +8,15 @@
         body {
             margin: 0;
             padding: 0;
-            background: url('gorilla-background.jpg') no-repeat center center fixed;
-            background-size: cover;
-            font-family: 'Press Start 2P', cursive;
+            background-color: #1a1a1a;
+            font-family: 'Press Start 2P', cursive, Arial, sans-serif;
             color: #fff;
             text-align: center;
+            overflow: hidden;
         }
         h1 {
-            font-size: 3em;
-            margin-top: 30px;
+            font-size: 2.5em;
+            margin-top: 20px;
             text-shadow: 2px 2px #000;
         }
         p {
@@ -36,18 +36,24 @@
             border-radius: 5px;
             font-size: 1.2em;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
         .button:hover {
             background-color: #ff6600;
         }
         .emoji-bar {
             font-size: 2em;
-            margin-top: 40px;
+            margin: 20px 0;
+        }
+        .game-container {
+            position: relative;
+            margin: 0 auto;
+            width: 600px;
         }
         canvas {
-            margin-top: 40px;
             border: 4px solid #fff;
             background-color: black;
+            box-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
         }
         #score {
             position: absolute;
@@ -68,54 +74,330 @@
             pointer-events: none;
             text-shadow: 1px 1px #000;
         }
+        .instructions {
+            margin: 20px auto;
+            max-width: 500px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .instructions h3 {
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
     <h1>🦍 100 MEN VS 1 GORILLA 🥊</h1>
     <p>Join the wildest meme movement online! Fight, cheer, and laugh in the ultimate showdown. This is for Harambe — no whitepaper, just vibes. 🥊🦍💥</p>
-    <button class="button" onclick="window.open('https://t.me/+VDTo0tVQMvU0MWQ8', '_blank')">🚀 Join the Movement</button>
+    
+    <button class="button" id="startButton">🎮 Start Game</button>
+    <button class="button" onclick="toggleInstructions()">ℹ️ How To Play</button>
     <button class="button" onclick="alert('Bro, just a meme coin, no whitepaper. Enjoy the ride! 🦍✨')">📜 Whitepaper</button>
 
-    <div class="emoji-bar">
-        🦍🥊💥👊🔥💣⚡💥🙌🦍🥊💥👊🔥💣⚡💥🙌<br>
-        👥👥👥👥👥👥👥👥👥👥👥👥👥👥👥👥<br>
-        🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍🦍<br>
+    <div class="instructions hidden" id="instructionsPanel">
+        <h3>How To Play</h3>
+        <p>Use arrow keys to control the gorilla</p>
+        <p>Collect 100 men to win the game</p>
+        <p>The gorilla grows stronger with each man captured</p>
+        <p>The game gets faster every 10 men</p>
     </div>
 
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
-    <div id="score">Score: 0/100</div>
-    <div id="message"></div>
+    <div class="emoji-bar">
+        🦍🥊💥👊🔥💣⚡💥🙌🦍🥊💥👊🔥💣⚡💥🙌
+    </div>
+
+    <div class="game-container">
+        <canvas id="gameCanvas" width="600" height="400" class="hidden"></canvas>
+        <div id="score" class="hidden">Score: 0/100</div>
+        <div id="message"></div>
+    </div>
+
+    <div class="emoji-bar">
+        👥👥👥👥👥👥👥👥👥👥👥👥👥👥👥👥
+    </div>
 
     <script>
-        // Game settings
-        const WIDTH = 600;
-        const HEIGHT = 400;
-        const BLOCK_SIZE = 20;
-        let FPS = 5; // Slower at start
+        // Toggle instructions panel
+        function toggleInstructions() {
+            const instructions = document.getElementById("instructionsPanel");
+            instructions.classList.toggle("hidden");
+        }
 
-        // Colors
-        const BLACK = "#000000";
-        const WHITE = "#FFFFFF";
-        const RED = "#FF0000";
-        const YELLOW = "#FFFF00";
-        const GREEN = "#00FF00";
+        // Wait for the DOM to be fully loaded
+        document.addEventListener("DOMContentLoaded", function() {
+            const startButton = document.getElementById("startButton");
+            const canvas = document.getElementById("gameCanvas");
+            const scoreDisplay = document.getElementById("score");
+            
+            startButton.addEventListener("click", function() {
+                // Show game elements
+                canvas.classList.remove("hidden");
+                scoreDisplay.classList.remove("hidden");
+                startButton.disabled = true;
+                startButton.textContent = "🎮 Game Started";
+                startButton.style.backgroundColor = "#666";
+                
+                // Start the game
+                initGame();
+            });
+        });
 
-        // Canvas setup
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const scoreDisplay = document.getElementById("score");
-        const messageDisplay = document.getElementById("message");
+        function initGame() {
+            // Game settings
+            const WIDTH = 600;
+            const HEIGHT = 400;
+            const BLOCK_SIZE = 20;
+            let FPS = 5; // Slower at start
 
-        // Load images (using base64 to eliminate path issues)
-        const gorillaImg = new Image();
-        const humanImg = new Image();
-        let useGorillaImage = false;
-        let useHumanImage = false;
+            // Colors
+            const BLACK = "#000000";
+            const WHITE = "#FFFFFF";
+            const RED = "#FF0000";
+            const YELLOW = "#FFFF00";
+            const GREEN = "#00FF00";
+            const ORANGE = "#FF9900";
 
-        // Counter to track loaded images
-        let imagesLoaded = 0;
-        const totalImages = 2;
+            // Canvas setup
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+            const scoreDisplay = document.getElementById("score");
+            const messageDisplay = document.getElementById("message");
 
-        // Base64 for Gorillavs100.png (converted from the provided image)
-        gorillaImg.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAADh0RVh0U29mdHdhcmUAbWF0cGxvdGxpYiB2ZXJzaW9uMy4yLjIsIGh0dHA6Ly9tYXRwbG90bGliLm9yZy+WH4yJAAAUVUlEQVR4nO3deXzUdb348f1TmkqSJKmL3bW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2rW2ttbaWmtL2r...
+            // Create SVG gorilla as a data URL
+            const gorillaIcon = `
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" fill="#333" />
+                <circle cx="50" cy="45" r="30" fill="#555" />
+                <circle cx="35" cy="40" r="5" fill="white" />
+                <circle cx="65" cy="40" r="5" fill="white" />
+                <circle cx="35" cy="40" r="2" fill="black" />
+                <circle cx="65" cy="40" r="2" fill="black" />
+                <path d="M 30 60 Q 50 80 70 60" fill="none" stroke="#333" stroke-width="5" />
+            </svg>`;
+            
+            // Create SVG human as a data URL
+            const humanIcon = `
+            <svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="25" cy="15" r="10" fill="#FFD700" />
+                <rect x="15" y="25" width="20" height="20" fill="#FFD700" />
+                <rect x="15" y="45" width="8" height="5" fill="#FFD700" />
+                <rect x="27" y="45" width="8" height="5" fill="#FFD700" />
+            </svg>`;
+
+            // Convert SVG to data URL
+            const svgToDataURL = (svg) => {
+                const encodedSVG = encodeURIComponent(svg);
+                return `data:image/svg+xml;charset=utf-8,${encodedSVG}`;
+            };
+
+            // Load images
+            const gorillaImg = new Image();
+            const humanImg = new Image();
+            gorillaImg.src = svgToDataURL(gorillaIcon);
+            humanImg.src = svgToDataURL(humanIcon);
+            
+            let useGorillaImage = true;
+            let useHumanImage = true;
+
+            // Gorilla class
+            class Gorilla {
+                constructor() {
+                    this.body = [[WIDTH / 2, HEIGHT / 2]];
+                    this.direction = [1, 0];
+                    this.size = BLOCK_SIZE * 2;
+                }
+
+                move() {
+                    const head = this.body[0];
+                    const newX = (head[0] + this.direction[0] * BLOCK_SIZE);
+                    const newY = (head[1] + this.direction[1] * BLOCK_SIZE);
+                    
+                    // Handle wrapping around the screen
+                    let wrappedX = newX;
+                    let wrappedY = newY;
+                    
+                    if (wrappedX < 0) wrappedX = WIDTH - BLOCK_SIZE;
+                    if (wrappedX >= WIDTH) wrappedX = 0;
+                    if (wrappedY < 0) wrappedY = HEIGHT - BLOCK_SIZE;
+                    if (wrappedY >= HEIGHT) wrappedY = 0;
+                    
+                    this.body.unshift([wrappedX, wrappedY]);
+                    this.body.pop(); // Remove the tail to keep the same length
+                }
+
+                grow() {
+                    this.size += 2;
+                    // Add a new segment at the current position
+                    const tail = this.body[this.body.length - 1];
+                    this.body.push([tail[0], tail[1]]);
+                }
+
+                draw() {
+                    const [headX, headY] = this.body[0];
+                    const centerX = headX - this.size / 4;
+                    const centerY = headY - this.size / 4;
+                    
+                    if (useGorillaImage) {
+                        ctx.drawImage(gorillaImg, centerX, centerY, this.size, this.size);
+                    } else {
+                        ctx.fillStyle = GREEN;
+                        ctx.fillRect(centerX, centerY, this.size, this.size);
+                    }
+                }
+            }
+
+            // Human class
+            class Human {
+                constructor() {
+                    this.position = this.randomPosition();
+                }
+
+                randomPosition() {
+                    return [
+                        Math.floor(Math.random() * (WIDTH / BLOCK_SIZE)) * BLOCK_SIZE,
+                        Math.floor(Math.random() * (HEIGHT / BLOCK_SIZE)) * BLOCK_SIZE
+                    ];
+                }
+
+                draw() {
+                    if (useHumanImage) {
+                        ctx.drawImage(humanImg, this.position[0], this.position[1], BLOCK_SIZE * 2, BLOCK_SIZE * 2);
+                    } else {
+                        ctx.fillStyle = ORANGE;
+                        ctx.fillRect(this.position[0], this.position[1], BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+
+            // Game logic
+            const gorilla = new Gorilla();
+            let human = new Human();
+            let score = 0;
+            let speed = FPS;
+            let messageTimer = 0;
+            let messageText = "";
+            const TARGET_SCORE = 100;
+            let gameRunning = true;
+
+            // Handle keyboard input
+            document.addEventListener("keydown", (event) => {
+                if (!gameRunning) return;
+                
+                if (event.key === "ArrowUp" && gorilla.direction[1] !== 1) {
+                    gorilla.direction = [0, -1];
+                } else if (event.key === "ArrowDown" && gorilla.direction[1] !== -1) {
+                    gorilla.direction = [0, 1];
+                } else if (event.key === "ArrowLeft" && gorilla.direction[0] !== 1) {
+                    gorilla.direction = [-1, 0];
+                } else if (event.key === "ArrowRight" && gorilla.direction[0] !== -1) {
+                    gorilla.direction = [1, 0];
+                }
+            });
+
+            // Check collision
+            function checkCollision() {
+                const [headX, headY] = gorilla.body[0];
+                const [humanX, humanY] = human.position;
+                
+                // Check if the gorilla's head collides with the human
+                // We need to account for the different sizes
+                return Math.abs(headX - humanX) < BLOCK_SIZE && 
+                       Math.abs(headY - humanY) < BLOCK_SIZE;
+            }
+
+            // Draw victory screen
+            function drawVictoryScreen() {
+                ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+                
+                ctx.fillStyle = "#FFD700";
+                ctx.font = "30px 'Press Start 2P', cursive";
+                ctx.textAlign = "center";
+                ctx.fillText("VICTORY!", WIDTH / 2, HEIGHT / 2 - 40);
+                
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "16px 'Press Start 2P', cursive";
+                ctx.fillText("100 Men Defeated!", WIDTH / 2, HEIGHT / 2);
+                ctx.fillText("For Harambe!", WIDTH / 2, HEIGHT / 2 + 30);
+                
+                ctx.fillStyle = "#FF9900";
+                ctx.font = "12px 'Press Start 2P', cursive";
+                ctx.fillText("Press SPACE to play again", WIDTH / 2, HEIGHT / 2 + 70);
+            }
+
+            // Reset game
+            function resetGame() {
+                score = 0;
+                speed = FPS;
+                gorilla.body = [[WIDTH / 2, HEIGHT / 2]];
+                gorilla.direction = [1, 0];
+                gorilla.size = BLOCK_SIZE * 2;
+                human = new Human();
+                gameRunning = true;
+                scoreDisplay.textContent = `Score: ${score}/100`;
+                messageDisplay.textContent = "";
+            }
+
+            // Add replay functionality
+            document.addEventListener("keydown", (event) => {
+                if (!gameRunning && event.code === "Space") {
+                    resetGame();
+                }
+            });
+
+            // Main game loop
+            function gameLoop() {
+                if (!gameRunning) {
+                    drawVictoryScreen();
+                    return;
+                }
+                
+                // Update
+                gorilla.move();
+
+                if (checkCollision()) {
+                    score++;
+                    gorilla.grow();
+                    human = new Human();
+                    messageText = `${score} ${score === 1 ? "man" : "men"} down!`;
+                    messageTimer = Date.now();
+                    
+                    if (score % 10 === 0) {
+                        speed += 1;
+                    }
+                }
+
+                // Draw
+                ctx.fillStyle = BLACK;
+                ctx.fillRect(0, 0, WIDTH, HEIGHT);
+                gorilla.draw();
+                human.draw();
+
+                scoreDisplay.textContent = `Score: ${score}/100`;
+
+                if (messageText && Date.now() - messageTimer < 1000) {
+                    messageDisplay.textContent = messageText;
+                } else {
+                    messageDisplay.textContent = "";
+                }
+
+                if (score >= TARGET_SCORE) {
+                    gameRunning = false;
+                    drawVictoryScreen();
+                    return;
+                }
+
+                setTimeout(gameLoop, 1000 / speed);
+            }
+
+            // Start the game
+            gameLoop();
+        }
+    </script>
+</body>
+</html>
